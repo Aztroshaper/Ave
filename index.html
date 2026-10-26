@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Elegía de EL AVE</title>
+<style>
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  box-sizing: border-box;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #030105;
+  font-family: 'Courier New', monospace;
+  color: #e0d0c0;
+}
+
+#canvas-container {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+body:before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35) 2px, transparent 3px, transparent 6px);
+  pointer-events: none; 
+  z-index: 99;
+}
+
+body:after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, transparent 40%, rgba(3,1,5,0.9) 100%), rgba(18,10,5,0.2);
+  opacity: 1;
+  pointer-events: none; 
+  animation: vhs-flicker 0.2s infinite;
+  z-index: 98;
+}
+
+@keyframes vhs-flicker {
+  0% { opacity: 0.12; } 30% { opacity: 0.18; } 70% { opacity: 0.10; } 100% { opacity: 0.15; }
+}
+
+@keyframes popEffect {
+  0% { transform: scale(1); box-shadow: 0 4px 0 #050604, 0 10px 20px rgba(0,0,0,0.9); }
+  30% { transform: scale(0.92); background: #331a00; border-color: #ff944d; box-shadow: 0 1px 0 #050604, 0 0 25px rgba(255, 148, 77, 0.8); }
+  100% { transform: scale(1.02); background: #261100; border-color: #ffb366; box-shadow: 0 4px 0 #090e0b, 0 0 15px rgba(255, 179, 102, 0.5); }
+}
+
+@keyframes pulseGlow {
+  0% { color: #d8c2af; text-shadow: 0 0 4px rgba(216, 194, 175, 0.4); }
+  100% { color: #ffffff; text-shadow: 0 0 12px rgba(255, 148, 77, 0.8); }
+}
+
+#start-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 1, 5, 0.99);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+#start-screen h1 {
+  color: #ff751a;
+  letter-spacing: 4px;
+  margin-bottom: 25px;
+  text-shadow: 0 0 15px rgba(255, 117, 26, 0.8);
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-family: 'Cinzel', 'Georgia', serif;
+}
+
+.enter-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 117, 26, 0.4);
+  color: #ff944d;
+  padding: 14px 40px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  letter-spacing: 6px;
+  cursor: pointer;
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 20px rgba(255, 117, 26, 0.1);
+  border-radius: 4px;
+}
+
+.enter-btn:hover {
+  border-color: #ff751a;
+  background: rgba(255, 117, 26, 0.08);
+  box-shadow: 0 0 35px rgba(255, 117, 26, 0.3);
+  letter-spacing: 8px;
+}
+
+.wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 5;
+}
+
+.left-spacer {
+  flex: 1;
+  height: 100%;
+  pointer-events: none;
+}
+
+.board {
+  width: 520px;
+  max-width: 100%;
+  height: 88vh;
+  padding: 15px 20px;
+  position: relative;
+  background: radial-gradient(circle at center, rgba(15,8,20,0.92) 0%, rgba(4,2,7,0.95) 100%);
+  border: 3px double rgba(255, 117, 26, 0.4);
+  border-radius: 12px;
+  box-sizing: border-box;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.95), inset 0 0 40px rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  backdrop-filter: blur(5px);
+}
+
+@media(max-width: 850px) {
+  .wrap {
+    display: block;
+    padding: 0;
+  }
+  .left-spacer {
+    display: none;
+  }
+  .board {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    height: 65vh;
+    padding: 10px 12px;
+    background: rgba(15, 8, 20, 0.92);
+  }
+}
+
+#close {
+  position: fixed;
+  right: 15px;
+  top: 15px;
+  width: 38px;
+  height: 38px;
+  background: rgba(43, 8, 8, 0.9);
+  color: #ff6666;
+  border: 1px solid #b83232;
+  cursor: pointer;
+  z-index: 100;
+  font-weight: bold;
+  font-family: monospace;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+  border-radius: 4px;
+}
+
+.top-board-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.top-meta-btn {
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
+  font-weight: 700;
+  background: rgba(8, 5, 12, 0.9);
+  border: 1px solid rgba(255, 117, 26, 0.3);
+  padding: 8px 16px;
+  border-radius: 4px;
+  animation: pulseGlow 2.5s infinite alternate ease-in-out;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.celestial-svg {
+  width: 35px;
+  height: 35px;
+  fill: none;
+  stroke: #ffb366;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px rgba(255, 117, 26, 0.4));
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.cell {
+  text-align: center;
+  padding: clamp(5px, 1.2vh, 10px) 2px;
+  background: rgba(8, 5, 12, 0.9);
+  border: 1px solid rgba(255, 117, 26, 0.25);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.9);
+  transition: transform 0.15s, background 0.3s;
+  animation: pulseGlow 2s infinite alternate ease-in-out;
+  font-weight: 900;
+  font-size: clamp(0.8rem, 2vw, 1.2rem);
+}
+
+.cell.active, .top-meta-btn.active, #cESTRELLA.active {
+  color: #ffffff !important;
+  animation: popEffect 0.4s ease-out forwards !important;
+  border-color: #ff751a !important;
+  z-index: 10;
+}
+
+.bottom-board-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+  position: relative;
+}
+
+#cESTRELLA {
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.planchette {
+  position: absolute;
+  width: 55px;
+  height: 65px;
+  border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+  background: linear-gradient(135deg, rgba(35, 20, 12, 0.9) 0%, rgba(15, 8, 5, 0.95) 100%);
+  border: 1px solid #ff944d;
+  pointer-events: none;
+  z-index: 90;
+  box-shadow: 0 20px 30px rgba(0,0,0,0.9), inset 0 0 15px rgba(255,117,26,0.15);
+  transform: translate(-50%, -50%);
+  transition: left .5s cubic-bezier(0.19, 1, 0.22, 1), top .5s cubic-bezier(0.19, 1, 0.22, 1);
+  filter: drop-shadow(0 0 8px rgba(255,117,26,0.4));
+}
+
+.planchette:after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: rgba(255, 117, 26, 0.08);
+  border: 1px dashed rgba(255, 148, 77, 0.6);
+  border-radius: 50%;
+  left: 50%;
+  top: 35%;
+  transform: translate(-50%, -50%);
+}
+
+.choices-bar {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  max-height: 70px;
+  overflow-y: auto;
+}
+
+.choice-pill {
+  background: rgba(15, 8, 20, 0.9);
+  border: 1px solid rgba(255, 117, 26, 0.3);
+  color: #d8c2af;
+  padding: 5px 8px;
+  border-radius: 3px;
+  font-size: clamp(0.55rem, 1.4vw, 0.7rem);
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.choice-pill:hover {
+  border-color: #ff751a;
+  color: #ffb366;
+  background: rgba(255, 117, 26, 0.15);
+}
+
+.choice-pill.used {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  position: relative;
+  z-index: 10;
+}
+
+input, button.action-btn {
+  background: rgba(8, 5, 12, 0.95);
+  color: #d8c2af;
+  border: 1px solid rgba(255, 117, 26, 0.3);
+  padding: 8px 10px;
+  font-family: 'Courier New', monospace;
+  outline: none;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+input {
+  flex: 1;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.9);
+}
+
+input:focus { border-color: #ff751a; color: #fff; }
+
+button.action-btn {
+  cursor: pointer;
+  background: rgba(25, 12, 5, 0.9);
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+button.action-btn:hover { background: rgba(50, 25, 10, 0.9); color: #ffb366; }
+
+#response {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.2;
+  margin-top: 6px;
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  letter-spacing: 2px;
+  color: #ffb366;
+  text-align: center;
+  min-height: 30px;
+  max-height: 45px;
+  overflow-y: auto;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255,117,26,0.5);
+  text-transform: uppercase;
+}
+
+.static {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #030105;
+  color: #444;
+  font-size: 40px;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: noise-anim 0.15s infinite;
+}
+
+@keyframes noise-anim {
+  0% { background-color: #050207; color: #222; }
+  50% { background-color: #0a040e; color: #111; }
+  100% { background-color: #020103; color: #333; }
+}
+
+h3, h2 { margin: 0; letter-spacing: 4px; color: #b88656; font-family: 'Cinzel', serif; }
+h2 { border-bottom: 1px dashed rgba(255,117,26,0.3); padding-bottom: 4px; font-size: clamp(0.9rem, 2.2vw, 1.2rem); text-align: center; }
+hr { border: 0; border-top: 1px solid rgba(255,117,26,0.2); margin: 8px 0; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body oncontextmenu="return false;">
+
+<div id="start-screen">
+  <h1>ELEGÍA DE EL AVE</h1>
+  <button class="enter-btn" id="btn-ok">ENTRAR AL PLANO</button>
+</div>
+
+<button id="close">X</button>
+
+<div class="wrap">
+  <div class="left-spacer"></div>
+
+  <div class="board" id="board">
+    <div>
+      <div class="top-board-row">
+        <svg class="celestial-svg" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        
+        <div class="top-meta-btn" id="cHOLA">HOLA</div>
+        <div class="top-meta-btn" id="cADIOS">ADIÓS</div>
+        
+        <svg class="celestial-svg" viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </div>
+
+      <h2>E L   A V E</h2>
+      
+      <div class="grid" id="grid"></div>
+      
+      <div class="bottom-board-row">
+        <div id="cESTRELLA">
+          <svg class="celestial-svg" viewBox="0 0 24 24" style="width:34px; height:34px;">
+            <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="planchette" id="p"></div>
+    
+    <div>
+      <div class="choices-bar" id="choices-container">
+        <div class="choice-pill" data-key="morir">¿Voy a morir pronto?</div>
+        <div class="choice-pill" data-key="quiensoy">¿Sabes quién soy?</div>
+        <div class="choice-pill" data-key="quienes">¿Quién eres?</div>
+        <div class="choice-pill" data-key="moriste">¿Moriste aquí?</div>
+        <div class="choice-pill" data-key="poema">Recitar la elegía</div>
+      </div>
+
+      <div class="row">
+        <input id="q" placeholder="Pregunta a el ave..." autocomplete="off">
+        <button class="action-btn" onclick="ask()">INOCULAR</button>
+      </div>
+      
+      <div id="response"></div>
+    </div>
+  </div>
+</div>
+
+<div class="static" id="static">SIN SEÑAL</div>
+<div id="canvas-container"></div>
+
+<script>
+document.addEventListener('copy', (e) => e.preventDefault());
+document.addEventListener('cut', (e) => e.preventDefault());
+document.addEventListener('selectstart', (e) => e.preventDefault());
+
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x030105);
+scene.fog = new THREE.FogExp2(0x030105, 0.035);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 2.2, 11);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0x22110a, 1.2);
+scene.add(ambientLight);
+
+const fireLight = new THREE.PointLight(0xff751a, 2.8, 20);
+fireLight.position.set(0, 3, 3);
+scene.add(fireLight);
+
+const moonLight = new THREE.DirectionalLight(0x442233, 1.0);
+moonLight.position.set(-6, 12, -4);
+scene.add(moonLight);
+
+const skeletonGroup = new THREE.Group();
+scene.add(skeletonGroup);
+
+const boneMat = new THREE.MeshStandardMaterial({ color: 0xe8dfd1, roughness: 0.5, metalness: 0.1 });
+const darkBoneMat = new THREE.MeshStandardMaterial({ color: 0x4a3d35, roughness: 0.7, metalness: 0.2 });
+
+const skullGroup = new THREE.Group();
+const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.75, 24, 24), boneMat);
+cranium.scale.set(0.9, 1.3, 1.4);
+skullGroup.add(cranium);
+
+const eyeGeo = new THREE.SphereGeometry(0.16, 12, 12);
+const leftEye = new THREE.Mesh(eyeGeo, darkBoneMat);
+leftEye.position.set(-0.24, 0.1, 0.6);
+const rightEye = leftEye.clone();
+rightEye.position.x = 0.24;
+skullGroup.add(leftEye);
+skullGroup.add(rightEye);
+
+const beak = new THREE.Mesh(new THREE.ConeGeometry(0.32, 2.5, 12), darkBoneMat);
+beak.rotation.x = Math.PI / 2;
+beak.position.set(0, -0.1, 1.45);
+skullGroup.add(beak);
+
+skullGroup.position.set(0, 4.0, 0);
+skeletonGroup.add(skullGroup);
+
+const spineGroup = new THREE.Group();
+for(let i = 0; i < 10; i++) {
+    const vertebra = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.2, 0.28), boneMat);
+    vertebra.position.set(0, 3.0 - (i * 0.26), -0.18);
+    spineGroup.add(vertebra);
+}
+skeletonGroup.add(spineGroup);
+
+const ribcage = new THREE.Group();
+for(let i = 0; i < 6; i++) {
+    const radius = 0.82 - (i * 0.05);
+    const ribGeo = new THREE.TorusGeometry(radius, 0.055, 8, 24, Math.PI * 0.92);
+    const leftRib = new THREE.Mesh(ribGeo, boneMat);
+    leftRib.rotation.y = Math.PI / 2;
+    leftRib.rotation.z = 0.18;
+    leftRib.position.set(0, 2.6 - (i * 0.3), 0);
+    
+    const rightRib = leftRib.clone();
+    rightRib.rotation.y = -Math.PI / 2;
+
+    ribcage.add(leftRib);
+    ribcage.add(rightRib);
+}
+skeletonGroup.add(ribcage);
+
+const leftWingGroup = new THREE.Group();
+const rightWingGroup = new THREE.Group();
+
+function buildWing(group, isLeft) {
+    const sign = isLeft ? 1 : -1;
+    const bone1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 2.7), boneMat);
+    bone1.rotation.z = sign * (Math.PI / 3.8);
+    bone1.position.set(sign * 1.3, 3.0, 0);
+    group.add(bone1);
+
+    const bone2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 3.1), boneMat);
+    bone2.rotation.z = sign * (-Math.PI / 4.5);
+    bone2.position.set(sign * 2.9, 3.9, 0);
+    group.add(bone2);
+
+    for(let j = 0; j < 8; j++) {
+        const feather = new THREE.Mesh(new THREE.ConeGeometry(0.07, 1.9, 4), darkBoneMat);
+        feather.rotation.z = sign * (Math.PI / 2.4 + (j * 0.11));
+        feather.position.set(sign * (1.7 + j * 0.38), 2.1 - (j * 0.32), -0.05);
+        group.add(feather);
+    }
+}
+
+buildWing(leftWingGroup, true);
+buildWing(rightWingGroup, false);
+skeletonGroup.add(leftWingGroup);
+skeletonGroup.add(rightWingGroup);
+
+function updateSceneLayout() {
+  if (window.innerWidth <= 850) {
+    skeletonGroup.position.set(0, 0.8, -2);
+    camera.position.set(0, 2.2, 12);
+  } else {
+    skeletonGroup.position.set(-3.2, -0.5, 0);
+    camera.position.set(0, 2.2, 11);
+  }
+}
+
+document.getElementById('btn-ok').addEventListener('click', function() {
+  document.getElementById('start-screen').style.display = 'none';
+  initAudio();
+  mapPos();
+});
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+}
+
+function playSpookyClick() {
+  initAudio();
+  if (!audioCtx) return;
+  let osc = audioCtx.createOscillator();
+  let gain = audioCtx.createGain();
+  let filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(110, audioCtx.currentTime);
+  filter.Q.setValueAtTime(4, audioCtx.currentTime);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.12);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.14);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+const letters = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ".split("");
+const grid = document.getElementById("grid");
+const pos = {};
+
+letters.forEach(l => {
+  let d = document.createElement("div");
+  d.className = "cell";
+  d.id = "c" + l;
+  d.textContent = l;
+  grid.appendChild(d);
+});
+
+function mapPos() {
+  const b = document.getElementById("board").getBoundingClientRect();
+  letters.forEach(l => {
+    const r = document.getElementById("c" + l).getBoundingClientRect();
+    pos[l] = { x: r.left - b.left + r.width / 2, y: r.top - b.top + r.height * 0.35 };
+  });
+  ["HOLA", "ADIOS", "ESTRELLA"].forEach(id => {
+    let el = document.getElementById("c" + id) || document.getElementById(id.toLowerCase() === 'estrella' ? 'cESTRELLA' : 'c' + id);
+    if(el) {
+      const r = el.getBoundingClientRect();
+      pos[id] = { x: r.left - b.left + r.width / 2, y: r.top - b.top + r.height * 0.5 };
+    }
+  });
+}
+setTimeout(mapPos, 500);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  updateSceneLayout();
+  mapPos();
+});
+updateSceneLayout();
+
+const banks = {
+    morir: [
+        ["NO", "PERO", "EL", "QUE", "TIENES", "AL", "LADO", "YA", "ESTA", "FRIO"],
+        ["NO", "HOY", "PERO", "SIENTO", "TUS", "PASOS", "APAGARSE"],
+        ["FALTA", "POCO"],
+        ["EL", "TIEMPO", "SE", "ACABO"],
+        ["SI"],
+        ["TU", "PULSO", "YA", "NO", "TIENE", "FUERZA"]
+    ],
+    quiensoy: [
+        ["SI"],
+        ["NO"],
+        ["TE", "RECONOZCO", "PERO", "TU", "A", "MI", "NO"],
+        ["ME", "CONOCES", "DE", "OTRA", "VIDA"]
+    ], 
+    quienes: [
+        ["YO", "VIVIA", "AQUÍ"],
+        ["SOLO", "SE", "QUE", "ESTOY", "DEBAJO", "DE", "TI"],
+        ["MIRA", "POR", "LA", "VENTANA"],
+        ["ESTOY", "DETRAS", "DE", "TI"]
+    ],
+    moriste: [
+        ["AQUI", "NO", "FUE", "EL", "FINAL"],
+        ["CAI"],
+        ["EN", "EL", "BORDE", "DEL", "VACIO"],
+        ["EN", "LA", "MESA", "DE", "JUEGO"]
+    ],
+    poema: [
+        ["DISFRAZAS", "DE", "AIRE", "LA", "PARTIDA"],
+        ["VUELA", "MUY", "LEJOS"],
+        ["CONOZCO", "LA", "SOMBRA"],
+        ["ME", "VOY", "SIN", "EL", "PESO", "DE", "TU", "VEREDICTO"]
+    ]
+};
+
+function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function chooseResponse(q){
+  q = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  if(q === "hola" || q.includes("buenos dias") || q.includes("saludos")) {
+    return "HOLA";
+  }
+  if(q === "adios" || q.includes("chau") || q.includes("terminar")) {
+    return "ADIOS";
+  }
+
+  const fallbackWords = ["NO SE QUE DECIR", "PREGUNTALE A LA ESTRELLA", "ME CUESTA RESPONDER", "EL AVE ESCUCHA"];
+  return rand(fallbackWords);
+}
+
+let currentUtterance = null;
+
+function speakElAve(text, callback) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.lang = 'es-MX';
+    currentUtterance.pitch = 0.4;
+    currentUtterance.rate = 0.75;
+    currentUtterance.onend = () => { if(callback) callback(); };
+    window.speechSynthesis.speak(currentUtterance);
+  } else {
+    if(callback) setTimeout(callback, 2000);
+  }
+}
+
+async function spell(text){
+  initAudio(); 
+  const p = document.getElementById("p");
+  const out = document.getElementById("response");
+  out.textContent = "";
+
+  let tokens = [];
+  if (text === "HOLA" || text === "ADIOS" || text === "ESTRELLA") {
+    tokens.push(text);
+  } else {
+    tokens = text.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split("");
+  }
+
+  for(const token of tokens){
+    if(pos[token]){
+      const targetCell = document.getElementById("c"+token);
+      
+      document.querySelectorAll(".active").forEach(x => x.classList.remove("active"));
+      
+      p.style.left = pos[token].x + "px";
+      p.style.top = pos[token].y + "px";
+
+      await new Promise(r => setTimeout(r, 350));
+      playSpookyClick();
+      
+      if(targetCell) targetCell.classList.add("active");
+
+      await new Promise(r => setTimeout(r, 450));
+    } else {
+      await new Promise(r => setTimeout(r, 200));
+    }
+    out.textContent += token;
+  }
+
+  speakElAve(text);
+
+  setTimeout(() => {
+    document.querySelectorAll(".active").forEach(x => x.classList.remove("active"));
+  }, 1000);
+}
+
+function ask(customText){
+  const inputEl = document.getElementById("q");
+  const q = customText || inputEl.value.trim();
+  if(!q) return;
+  inputEl.value = "";
+  
+  playSpookyClick();
+  spell(chooseResponse(q));
+}
+
+document.querySelectorAll('.choice-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+        const key = pill.getAttribute('data-key');
+        const options = banks[key];
+        if (options && options.length > 0) {
+            const chosenWords = options[Math.floor(Math.random() * options.length)];
+            pill.classList.add('used');
+            spell(chosenWords.join(" "));
+        }
+    });
+});
+
+document.getElementById("q").addEventListener("keydown", e => {
+  if(e.key === "Enter") ask();
+});
+
+document.getElementById("close").onclick = () => {
+  document.querySelector(".wrap").style.display = "none";
+  document.getElementById("static").style.display = "flex";
+  setTimeout(() => { window.close(); }, 500);
+};
+
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+    const elapsedTime = clock.getElapsedTime();
+
+    skeletonGroup.position.y = (window.innerWidth <= 850 ? 0.8 : -0.5) + Math.sin(elapsedTime * 1.1) * 0.15;
+    skullGroup.rotation.y = Math.sin(elapsedTime * 0.6) * 0.15;
+    skullGroup.rotation.z = Math.cos(elapsedTime * 0.8) * 0.1;
+
+    leftWingGroup.rotation.z = Math.sin(elapsedTime * 1.5) * 0.08;
+    rightWingGroup.rotation.z = -Math.sin(elapsedTime * 1.5) * 0.08;
+
+    fireLight.intensity = 2.5 + Math.sin(elapsedTime * 10) * 0.5;
+
+    if (window.innerWidth > 850) {
+      camera.position.x = Math.sin(elapsedTime * 0.12) * 1.5;
+    } else {
+      camera.position.x = 0;
+    }
+    camera.lookAt(0, 1.8, 0);
+
+    renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
